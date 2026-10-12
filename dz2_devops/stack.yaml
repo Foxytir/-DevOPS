@@ -1,0 +1,44 @@
+services:
+  web:
+    image: localhost:6004/akhmetov-04/probe:${VERSION}
+    environment:
+      MARKER: runlab
+      APP_PORT: "5004"
+      DATABASE_URL: mysql://root:lab@db:3306/lab
+    ports:
+      - "8012:5004"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5004/notes')"]
+      interval: 3s
+      retries: 3
+    networks: [net]
+    deploy:
+      replicas: 3
+      update_config:
+        parallelism: 1
+        delay: 5s
+        order: start-first
+        failure_action: rollback
+        monitor: 20s
+
+  db:
+    image: mariadb:11
+    environment:
+      MARIADB_ROOT_PASSWORD: lab
+      MARIADB_DATABASE: lab
+    volumes:
+      - data:/var/lib/mysql
+    networks: [net]
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 2s
+      retries: 30
+
+networks:
+  net:
+    ipam:
+      config:
+        - subnet: 10.24.0.0/24
+
+volumes:
+  data:
