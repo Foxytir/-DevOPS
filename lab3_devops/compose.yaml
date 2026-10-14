@@ -1,0 +1,43 @@
+name: akhmetov-04
+
+services:
+  web:
+    build: .
+    image: akhmetov-04/probe:3.0
+    environment:
+      MARKER: runlab
+      APP_PORT: "5004"
+      DATABASE_URL: mysql://root:lab@db:3306/lab
+    ports:
+      - "8012:5004"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks: [front, back]
+
+  db:
+    image: mariadb:11
+    environment:
+      MARIADB_ROOT_PASSWORD: lab
+      MARIADB_DATABASE: lab
+    volumes:
+      - data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 2s
+      retries: 30
+    networks: [back]
+
+  caddy:
+    image: caddy:2
+    networks: [front]
+
+networks:
+  back:
+    ipam:
+      config:
+        - subnet: 10.24.0.0/24
+  front:
+
+volumes:
+  data:
