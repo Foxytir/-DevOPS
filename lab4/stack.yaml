@@ -1,0 +1,37 @@
+# Стек лабораторной работы № 4 — вариант 04, исходный вид (до реестра).
+# В разделе 4 образ у web заменяется на localhost:6004/akhmetov-04/probe:4.0,
+# в разделе 6 добавляются healthcheck у web и update_config с rollback.
+services:
+  web:
+    image: akhmetov-04/probe:4.0
+    environment:
+      MARKER: runlab
+      APP_PORT: "5004"
+      DATABASE_URL: mysql://root:lab@db:3306/lab
+    ports:
+      - "8012:5004"
+    networks: [net]
+    deploy:
+      replicas: 3
+
+  db:
+    image: mariadb:11
+    environment:
+      MARIADB_ROOT_PASSWORD: lab
+      MARIADB_DATABASE: lab
+    volumes:
+      - data:/var/lib/mysql
+    networks: [net]
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 2s
+      retries: 30
+
+networks:
+  net:
+    ipam:
+      config:
+        - subnet: 10.24.0.0/24
+
+volumes:
+  data:
